@@ -2,7 +2,7 @@
 // This software may be modified and distributed under the terms
 // of the BSD license. See the LICENSE file for details.
 
-package modbus
+package relay
 
 import (
 	"io"
@@ -97,6 +97,6 @@ func (mb *serialPort) closeIdle() {
 	idle := time.Now().Sub(mb.lastActivity)
 	if idle >= mb.IdleTimeout {
 		mb.logf("modbus: closing connection due to idle timeout: %v", idle)
-		mb.close()
+		_ = mb.close()
 	}
 }
