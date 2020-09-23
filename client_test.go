@@ -96,3 +96,32 @@ func TestClient_OnPoint(t *testing.T) {
 		fmt.Println(client.OnPoint(byte(i), 1000*(i+1)))
 	}
 }
+
+func TestClient_FlipOneNil(t *testing.T) {
+	fmt.Println(client.FlipOneNil(1), client.FlipOneNil(2))
+}
+
+func TestClient_OffOneNil(t *testing.T) {
+	fmt.Println(client.OnOne(1), client.OnOne(2))
+	fmt.Println(client.OffOne(1), client.OffOne(2))
+}
+
+func TestGroupNil(t *testing.T) {
+	client.FlipGroupNil(0, 1, 2, 3, 4, 5, 6, 7)
+	time.Sleep(time.Second)
+	client.OffGroup(0, 1, 2, 3, 4, 5, 6, 7)
+	time.Sleep(time.Second)
+	client.OnGroup(0, 1, 2, 3, 4, 5, 6, 7)
+	time.Sleep(time.Second)
+	client.OffGroup(0, 1, 2, 3, 4, 5, 6, 7)
+	time.Sleep(time.Second)
+	client.FlipGroupNil(0, 1, 2, 3, 4, 5, 6, 7)
+}
+
+func TestPointNil(t *testing.T) {
+	client.OffPoint(1, 1000)
+	client.OffPoint(2, 2000)
+	time.Sleep(time.Second)
+	client.OnPoint(1, 1000)
+	client.OnPoint(2, 2000)
+}

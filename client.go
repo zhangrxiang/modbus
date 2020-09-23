@@ -36,7 +36,7 @@ func (c *Client) send(code byte, data []byte) ([]byte, error) {
 }
 
 func (c *Client) one(i, code, result byte) error {
-	if i <= 0 || i >= 32 {
+	if i <= 0 || i >= MaxBranchesLength {
 		return errors.New("too large or small")
 	}
 	data, err := c.send(code, []byte{0, 0, 0, i})
@@ -56,15 +56,15 @@ func (c *Client) one(i, code, result byte) error {
 }
 
 func (c *Client) OffOne(i byte) error {
-	return c.one(i+1, 0x11, 0)
+	return c.one(i+1, RequestOffOne, 0)
 }
 
 func (c *Client) OnOne(i byte) error {
-	return c.one(i+1, 0x12, 1)
+	return c.one(i+1, RequestOnOne, 1)
 }
 
 func (c *Client) FlipOne(i byte) error {
-	return c.one(i+1, 0x20, 2)
+	return c.one(i+1, RequestFlipOne, 2)
 }
 
 func (c *Client) StatusOne(i byte) (byte, error) {
@@ -80,8 +80,8 @@ func (c *Client) Status() ([]byte, error) {
 }
 
 func (c *Client) status() ([]byte, error) {
-	status := make([]byte, 32)
-	data, err := c.send(0x10, []byte{0, 0, 0, 0})
+	status := make([]byte, MaxBranchesLength)
+	data, err := c.send(RequestReadStatus, []byte{0, 0, 0, 0})
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (c *Client) status() ([]byte, error) {
 	return status, nil
 }
 
-func (c *Client) sendNoReturn(code byte, data []byte) error {
+func (c *Client) sendNil(code byte, data []byte) error {
 	adu, err := c.packager.Encode(&ProtocolDataUnit{
 		FunctionCode: code,
 		Data:         data,
@@ -106,7 +106,7 @@ func (c *Client) sendNoReturn(code byte, data []byte) error {
 }
 
 func (c *Client) group(branches ...byte) (status []byte) {
-	origin := make([]byte, 32)
+	origin := make([]byte, MaxBranchesLength)
 	for key := range origin {
 		for _, val := range branches {
 			if byte(key) == val {
@@ -126,23 +126,23 @@ func (c *Client) group(branches ...byte) (status []byte) {
 }
 
 func (c *Client) OffGroup(i ...byte) error {
-	_, err := c.send(0x14, c.group(i...))
+	_, err := c.send(RequestOffGroup, c.group(i...))
 	return err
 }
 
 func (c *Client) OnGroup(i ...byte) error {
-	_, err := c.send(0x15, c.group(i...))
+	_, err := c.send(RequestOnGroup, c.group(i...))
 	return err
 }
 
 func (c *Client) FlipGroup(i ...byte) error {
-	_, err := c.send(0x16, c.group(i...))
+	_, err := c.send(RequestFlipGroup, c.group(i...))
 	return err
 }
 
 func (c *Client) point(code, i byte, time int) error {
 	i++
-	if i <= 0 || i >= 32 {
+	if i <= 0 || i >= MaxBranchesLength {
 		return errors.New("too large or small")
 	}
 	data := make([]byte, 4)
@@ -152,17 +152,66 @@ func (c *Client) point(code, i byte, time int) error {
 }
 
 func (c *Client) OffPoint(i byte, t int) error {
-	return c.point(0x22, i, t)
+	return c.point(RequestOffPoint, i, t)
 }
 
 func (c *Client) OnPoint(i byte, t int) error {
-	return c.point(0x21, i, t)
+	return c.point(RequestOnPoint, i, t)
 }
 
 func (c *Client) OffAll() error {
-	return c.sendNoReturn(0x33, []byte{0, 0, 0, 0})
+	return c.sendNil(RequestRunCMDNil, []byte{0, 0, 0, 0})
 }
 
 func (c *Client) OnAll() error {
-	return c.sendNoReturn(0x33, []byte{0xff, 0xff, 0xff, 0xff})
+	return c.sendNil(RequestRunCMDNil, []byte{0xff, 0xff, 0xff, 0xff})
+}
+
+func (c *Client) oneNil(i, code byte) error {
+	if i <= 0 || i >= MaxBranchesLength {
+		return errors.New("too large or small")
+	}
+	return c.sendNil(code, []byte{0, 0, 0, i})
+}
+
+func (c *Client) FlipOneNil(i byte) error {
+	return c.oneNil(i+1, RequestFlipOneNil)
+}
+
+func (c *Client) OffOneNil(i byte) error {
+	return c.oneNil(i+1, RequestOffOneNil)
+}
+
+func (c *Client) OnOneNil(i byte) error {
+	return c.oneNil(i+1, RequestOnOneNil)
+}
+
+func (c *Client) OffGroupNil(i ...byte) error {
+	return c.sendNil(RequestOffGroupNil, c.group(i...))
+}
+
+func (c *Client) OnGroupNil(i ...byte) error {
+	return c.sendNil(RequestOnGroupNil, c.group(i...))
+}
+
+func (c *Client) FlipGroupNil(i ...byte) error {
+	return c.sendNil(RequestFlipGroupNil, c.group(i...))
+}
+
+func (c *Client) pointNil(code, i byte, time int) error {
+	i++
+	if i <= 0 || i >= MaxBranchesLength {
+		return errors.New("too large or small")
+	}
+	data := make([]byte, 4)
+	binary.BigEndian.PutUint32(data, uint32(time))
+	return c.sendNil(code, []byte{data[1], data[2], data[3], i})
+}
+
+func (c *Client) OnPointNil(i byte, t int) error {
+	return c.pointNil(RequestOnPointNil, i, t)
+}
+
+func (c *Client) OffPointNil(i byte, t int) error {
+	return c.pointNil(RequestOffPointNil, i, t)
 }

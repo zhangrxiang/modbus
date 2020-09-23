@@ -7,7 +7,7 @@ import (
 )
 
 var handle = func() *ClientHandler {
-	handle := NewClientHandler("COM7")
+	handle := NewHandler("COM7")
 	handle.SlaveId = 1
 	handle.BaudRate = 9600
 	handle.Parity = "N"

@@ -23,8 +23,22 @@ type ClientHandler struct {
 	relaySerialTransporter
 }
 
-// NewClientHandler allocates and initializes a RELAYClientHandler.
-func NewClientHandler(address string) *ClientHandler {
+// NewDefaultHandler allocates and initializes a ClientHandler.
+func NewDefaultHandler(address string, slave byte) *ClientHandler {
+	handler := &ClientHandler{}
+	handler.Address = address
+	handler.Timeout = serialTimeout
+	handler.IdleTimeout = serialIdleTimeout
+	handler.SlaveId = slave
+	handler.BaudRate = 9600
+	handler.Parity = "N"
+	handler.DataBits = 8
+	handler.StopBits = 1
+	return handler
+}
+
+// NewHandler allocates and initializes a RELAYClientHandler.
+func NewHandler(address string) *ClientHandler {
 	handler := &ClientHandler{}
 	handler.Address = address
 	handler.Timeout = serialTimeout
@@ -50,7 +64,7 @@ func (mb *relayPackager) Encode(pdu *ProtocolDataUnit) (adu []byte, err error) {
 		return
 	}
 	adu = make([]byte, length)
-	adu[0] = 0x55
+	adu[0] = RequestHeader
 	adu[1] = mb.SlaveId
 	adu[2] = pdu.FunctionCode
 	copy(adu[3:], pdu.Data)
@@ -171,10 +185,10 @@ func (mb *relaySerialTransporter) calculateDelay(chars int) time.Duration {
 }
 
 func calculateRelayResponseLength(function byte) int {
-	if 0x30 <= function && function <= 0x38 {
+	if RequestFlipOneNil <= function && function <= RequestOffPointNil {
 		return 0
 	}
-	return 8
+	return DataLength
 }
 
 //数据校验位赋值
