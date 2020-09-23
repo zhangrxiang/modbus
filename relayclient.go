@@ -7,7 +7,6 @@ package relay
 import (
 	"fmt"
 	"io"
-	"log"
 	"time"
 )
 
@@ -18,7 +17,7 @@ const (
 	relayExceptionSize = 5
 )
 
-// RELAYClientHandler implements Packager and Transporter interface.
+// ClientHandler implements Packager and Transporter interface.
 type ClientHandler struct {
 	relayPackager
 	relaySerialTransporter
@@ -151,7 +150,6 @@ func (mb *relaySerialTransporter) Send(aduRequest []byte) (aduResponse []byte, e
 	if err != nil {
 		return
 	}
-	log.Println(n)
 	aduResponse = data[:n]
 	mb.serialPort.logf("serial: received % x\n", aduResponse)
 	return
