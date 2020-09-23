@@ -1,4 +1,4 @@
-module relay-xk-sdk
+module github.com/zhangrxiang/relay-xk-sdk
 
 go 1.14
 

@@ -5,8 +5,7 @@ import (
 	"errors"
 )
 
-// ClientHandler is the interface that groups the Packager and Transporter methods.
-
+// Client is the interface that groups the Packager and Transporter methods.
 type Client struct {
 	packager    Packager
 	transporter Transporter
