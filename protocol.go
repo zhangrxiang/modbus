@@ -1,5 +1,7 @@
 package relay
 
+import "errors"
+
 const (
 	MaxBranchesLength = 32
 	DataLength        = 0x8
@@ -50,6 +52,11 @@ const (
 	ResponseModelAddress       = 0x40 //返回模块地址
 	ResponseReadInnerVariable  = 0x70 //读内部变量
 	ResponseWriteInnerVariable = 0x71 //写内部变量
+)
+
+var (
+	ErrBranchesLength = errors.New("继电器路数超出范围")
+	ErrResult         = errors.New("结果异常")
 )
 
 // ProtocolDataUnit (PDU) is independent of underlying communication layers.
