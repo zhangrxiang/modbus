@@ -1,7 +1,3 @@
-// Copyright 2014 Quoc-Viet Nguyen. All rights reserved.
-// This software may be modified and distributed under the terms
-// of the BSD license. See the LICENSE file for details.
-
 package relay
 
 import (
@@ -63,7 +59,7 @@ func (mb *relayPackager) Encode(pdu *ProtocolDataUnit) (adu []byte, err error) {
 		err = fmt.Errorf("serial: length of data '%v' must not be bigger than '%v'", length, relayMaxSize)
 		return
 	}
-	adu = make([]byte, length)
+	adu = make([]byte, DataLength)
 	adu[0] = RequestHeader
 	adu[1] = mb.SlaveId
 	adu[2] = pdu.FunctionCode
@@ -121,7 +117,6 @@ func (mb *relaySerialTransporter) Send(aduRequest []byte) (aduResponse []byte, e
 
 	// Send the request
 	mb.serialPort.logf("serial: sending % x\n", aduRequest)
-	//aduRequest = []byte{0x55, 0x01, 0x33, 0xff, 0xff, 0xff, 0xff, 0x85}
 	if _, err = mb.port.Write(aduRequest); err != nil {
 		return
 	}
