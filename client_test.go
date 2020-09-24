@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-var client = NewClient(handle)
+var client = NewDefaultClient(handle)
 
 func TestNewClient(t *testing.T) {
 	_ = client.OnAll()
@@ -17,20 +17,21 @@ func TestNewClient(t *testing.T) {
 }
 
 func TestClient_OffOne(t *testing.T) {
-	client.OnAll()
-	client.OffOne(1)
-	client.OffOne(2)
-	client.OffOne(3)
-	client.OffOne(4)
-	client.OffOne(5)
-	client.OffOne(6)
-	client.OffOne(7)
-	client.OffOne(8)
-	client.OffOne(32)
+	client = NewClient(handle, DefaultBranchesLength)
+	fmt.Println(client.OnAll())
+	fmt.Println(client.OffOne(1))
+	fmt.Println(client.OffOne(2))
+	fmt.Println(client.OffOne(3))
+	fmt.Println(client.OffOne(4))
+	fmt.Println(client.OffOne(5))
+	fmt.Println(client.OffOne(6))
+	fmt.Println(client.OffOne(7))
+	fmt.Println(client.OffOne(8))
+	fmt.Println(client.OffOne(32))
 }
 
 func TestClient_OnOne(t *testing.T) {
-	client.OffAll()
+	fmt.Println(client.OffAll())
 	fmt.Println(client.OnOne(1))
 	fmt.Println(client.OnOne(2))
 	fmt.Println(client.OnOne(4))
@@ -43,14 +44,22 @@ func TestClient_OnOne(t *testing.T) {
 func TestClient_FlipOne(t *testing.T) {
 	fmt.Println(client.FlipOne(1))
 	fmt.Println(client.StatusOne(1))
+	fmt.Println(client.FlipOne(7))
+	fmt.Println(client.StatusOne(7))
+	fmt.Println(client.FlipOne(8))
+	fmt.Println(client.StatusOne(8))
 }
 
 func TestClient_Status(t *testing.T) {
-	client.OffAll()
+	fmt.Println(client.OffAll())
 	fmt.Println(client.OnOne(1))
 	fmt.Println(client.OnOne(7))
 	fmt.Println(client.OnOne(10))
 	fmt.Println(client.Status())
+	fmt.Println(client.StatusOne(1))
+	fmt.Println(client.StatusOne(6))
+	fmt.Println(client.StatusOne(7))
+	fmt.Println(client.StatusOne(8))
 }
 
 func TestClient_StatusOne(t *testing.T) {
@@ -70,11 +79,15 @@ func TestClient_StatusOne(t *testing.T) {
 func TestClient_OffGroup(t *testing.T) {
 	client.OnAll()
 	fmt.Println(client.OffGroup(0, 2, 4, 6))
+	fmt.Println(client.OffGroup(0))
+	fmt.Println(client.OffGroup(8))
 }
 
 func TestClient_OnGroup(t *testing.T) {
 	client.OffAll()
 	fmt.Println(client.OnGroup(0, 2, 4, 6))
+	fmt.Println(client.OnGroup(0))
+	fmt.Println(client.OnGroup(8))
 }
 
 func TestClient_FlipGroup(t *testing.T) {
@@ -86,7 +99,7 @@ func TestClient_FlipGroup(t *testing.T) {
 }
 
 func TestClient_OffPoint(t *testing.T) {
-	for i := 0; i < 8; i++ {
+	for i := 0; i < 9; i++ {
 		fmt.Println(client.OffPoint(byte(i), 1000*(i+1)))
 	}
 }
@@ -119,9 +132,13 @@ func TestGroupNil(t *testing.T) {
 }
 
 func TestPointNil(t *testing.T) {
-	client.OffPoint(1, 1000)
-	client.OffPoint(2, 2000)
+	fmt.Println(client.OffPoint(0, 1000))
+	fmt.Println(client.OffPoint(1, 1000))
+	fmt.Println(client.OffPoint(2, 2000))
+	fmt.Println(client.OffPoint(8, 2000))
 	time.Sleep(time.Second)
-	client.OnPoint(1, 1000)
-	client.OnPoint(2, 2000)
+	fmt.Println(client.OnPoint(0, 1000))
+	fmt.Println(client.OnPoint(1, 1000))
+	fmt.Println(client.OnPoint(2, 2000))
+	fmt.Println(client.OnPoint(8, 2000))
 }

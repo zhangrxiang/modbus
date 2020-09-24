@@ -3,10 +3,11 @@ package relay
 import "errors"
 
 const (
-	MaxBranchesLength = 32
-	DataLength        = 0x8
-	RequestHeader     = 0x55 //发送帧数据头
-	ResponseHeader    = 0x22 //接受帧数据头
+	DefaultBranchesLength = 0x8
+	MaxBranchesLength     = 32
+	DataLength            = 0x8
+	RequestHeader         = 0x55 //发送帧数据头
+	ResponseHeader        = 0x22 //接受帧数据头
 
 	//功能码
 	RequestReadStatus = 0x10 //读取状态

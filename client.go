@@ -8,11 +8,26 @@ import (
 type Client struct {
 	packager    Packager
 	transporter Transporter
+	length      byte
 }
 
 // NewClient creates a new modbus client with given backend handler.
-func NewClient(handler *ClientHandler) *Client {
-	return &Client{packager: handler, transporter: handler}
+func NewClient(handler *ClientHandler, length byte) *Client {
+	if length < DefaultBranchesLength {
+		length = DefaultBranchesLength
+	}
+	if length > MaxBranchesLength {
+		length = MaxBranchesLength
+	}
+	return &Client{
+		packager:    handler,
+		transporter: handler,
+		length:      length,
+	}
+}
+
+func NewDefaultClient(handler *ClientHandler) *Client {
+	return NewClient(handler, DefaultBranchesLength)
 }
 
 //send 发送有返回数据
@@ -37,7 +52,7 @@ func (c *Client) send(code byte, data []byte) ([]byte, error) {
 
 //单个继电器路数处理
 func (c *Client) one(i, code, result byte) error {
-	if i <= 0 || i > MaxBranchesLength {
+	if i <= 0 || i > c.length {
 		return ErrBranchesLength
 	}
 	data, err := c.send(code, []byte{0, 0, 0, i})
@@ -73,7 +88,7 @@ func (c *Client) FlipOne(i byte) error {
 
 //某路继电器状态
 func (c *Client) StatusOne(i byte) (byte, error) {
-	if i <= 0 || i > MaxBranchesLength {
+	if i <= 0 || i >= c.length {
 		return 0, ErrBranchesLength
 	}
 	status, err := c.status()
@@ -85,7 +100,11 @@ func (c *Client) StatusOne(i byte) (byte, error) {
 
 //继电器状态
 func (c *Client) Status() ([]byte, error) {
-	return c.status()
+	status, err := c.status()
+	if err != nil {
+		return nil, err
+	}
+	return status[:c.length], err
 }
 
 //最大继电器路数状态 MaxBranchesLength
@@ -117,7 +136,21 @@ func (c *Client) sendNil(code byte, data []byte) error {
 }
 
 //组操作
-func (c *Client) group(branches ...byte) (status []byte) {
+func (c *Client) group(branches ...byte) ([]byte, error) {
+	min, max := byte(0), byte(0)
+	for _, v := range branches {
+		if min > v {
+			min = v
+		}
+
+		if max < v {
+			max = v
+		}
+	}
+	if min < 0 || max >= c.length {
+		return nil, ErrBranchesLength
+	}
+
 	origin := make([]byte, MaxBranchesLength)
 	for key := range origin {
 		for _, val := range branches {
@@ -126,7 +159,7 @@ func (c *Client) group(branches ...byte) (status []byte) {
 			}
 		}
 	}
-	status = make([]byte, 4)
+	status := make([]byte, 4)
 	for i := 0; i < 4; i++ {
 		sum := byte(0)
 		for k, v := range origin[(3-i)*8 : (4-i)*8] {
@@ -134,24 +167,36 @@ func (c *Client) group(branches ...byte) (status []byte) {
 		}
 		status[i] = sum
 	}
-	return
+	return status, nil
 }
 
 //断开组
 func (c *Client) OffGroup(i ...byte) error {
-	_, err := c.send(RequestOffGroup, c.group(i...))
+	group, err := c.group(i...)
+	if err != nil {
+		return err
+	}
+	_, err = c.send(RequestOffGroup, group)
 	return err
 }
 
 //闭合组
 func (c *Client) OnGroup(i ...byte) error {
-	_, err := c.send(RequestOnGroup, c.group(i...))
+	group, err := c.group(i...)
+	if err != nil {
+		return err
+	}
+	_, err = c.send(RequestOnGroup, group)
 	return err
 }
 
 //组翻转
 func (c *Client) FlipGroup(i ...byte) error {
-	_, err := c.send(RequestFlipGroup, c.group(i...))
+	group, err := c.group(i...)
+	if err != nil {
+		return err
+	}
+	_, err = c.send(RequestFlipGroup, group)
 	return err
 }
 
@@ -159,7 +204,7 @@ func (c *Client) FlipGroup(i ...byte) error {
 //时间毫秒
 func (c *Client) point(code, i byte, time int) error {
 	i++
-	if i <= 0 || i > MaxBranchesLength {
+	if i <= 0 || i > c.length {
 		return ErrBranchesLength
 	}
 	data := make([]byte, 4)
@@ -190,7 +235,8 @@ func (c *Client) OnAll() error {
 
 //某路操作无返回数据
 func (c *Client) oneNil(i, code byte) error {
-	if i <= 0 || i > MaxBranchesLength {
+	i++
+	if i <= 0 || i > c.length {
 		return ErrBranchesLength
 	}
 	return c.sendNil(code, []byte{0, 0, 0, i})
@@ -198,12 +244,12 @@ func (c *Client) oneNil(i, code byte) error {
 
 //翻转某路
 func (c *Client) FlipOneNil(i byte) error {
-	return c.oneNil(i+1, RequestFlipOneNil)
+	return c.oneNil(i, RequestFlipOneNil)
 }
 
 //断开某路
 func (c *Client) OffOneNil(i byte) error {
-	return c.oneNil(i+1, RequestOffOneNil)
+	return c.oneNil(i, RequestOffOneNil)
 }
 
 //吸合某路
@@ -213,24 +259,36 @@ func (c *Client) OnOneNil(i byte) error {
 
 //断开组
 func (c *Client) OffGroupNil(i ...byte) error {
-	return c.sendNil(RequestOffGroupNil, c.group(i...))
+	group, err := c.group(i...)
+	if err != nil {
+		return err
+	}
+	return c.sendNil(RequestOffGroupNil, group)
 }
 
 //吸合组
 func (c *Client) OnGroupNil(i ...byte) error {
-	return c.sendNil(RequestOnGroupNil, c.group(i...))
+	group, err := c.group(i...)
+	if err != nil {
+		return err
+	}
+	return c.sendNil(RequestOnGroupNil, group)
 }
 
 //翻转组
 func (c *Client) FlipGroupNil(i ...byte) error {
-	return c.sendNil(RequestFlipGroupNil, c.group(i...))
+	group, err := c.group(i...)
+	if err != nil {
+		return err
+	}
+	return c.sendNil(RequestFlipGroupNil, group)
 }
 
 //点动处理无返回数据
-//0 <= i && i < MaxBranchesLength time 毫秒
+//0 <= i && i < c.length time 毫秒
 func (c *Client) pointNil(code, i byte, time int) error {
 	i++
-	if i <= 0 || i > MaxBranchesLength {
+	if i <= 0 || i > c.length {
 		return ErrBranchesLength
 	}
 	data := make([]byte, 4)
