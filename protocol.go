@@ -57,7 +57,7 @@ const (
 
 var (
 	ErrBranchesLength = errors.New("继电器路数超出范围")
-	ErrResult         = errors.New("结果异常")
+	ErrReturnResult   = errors.New("串口返回数据格式异常")
 )
 
 // ProtocolDataUnit (PDU) is independent of underlying communication layers.

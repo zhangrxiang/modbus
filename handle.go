@@ -87,7 +87,7 @@ func (mb *relayPackager) Verify(aduRequest []byte, aduResponse []byte) (err erro
 // Decode extracts PDU from RELAY frame and verify CRC.
 func (mb *relayPackager) Decode(adu []byte) (pdu *ProtocolDataUnit, err error) {
 	if len(adu) < 8 {
-		return
+		return nil, ErrReturnResult
 	}
 	length := len(adu)
 	if adu[7] != Sign(adu) {

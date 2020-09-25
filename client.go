@@ -68,7 +68,7 @@ func (c *Client) one(i, code, result byte) error {
 	} else if result == 2 {
 		return nil
 	}
-	return ErrResult
+	return ErrReturnResult
 }
 
 //断开某路
