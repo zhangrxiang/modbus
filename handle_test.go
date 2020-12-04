@@ -15,7 +15,7 @@ var handle = func() *ClientHandler {
 	handle.StopBits = 1
 	err := handle.Connect()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Connect: ", err)
 	}
 	return handle
 }()
@@ -40,7 +40,7 @@ func Do(handler *ClientHandler, function byte, data []byte) {
 }
 
 func TestRequestOnAll(t *testing.T) {
-	Do(handle, 0x33, []byte{0xff, 0xff, 0xff, 0xff})
+	Do(handle, RequestRunCMDNil, []byte{0xff, 0xff, 0xff, 0xff})
 }
 
 func TestRequestOffAll(t *testing.T) {

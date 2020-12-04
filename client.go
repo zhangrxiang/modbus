@@ -114,6 +114,9 @@ func (c *Client) status() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(data) != 4 {
+		return nil, ErrReturnResult
+	}
 	for k, v := range data {
 		for i := 0; i < 8; i++ {
 			status[(3-k)*8+i] = v & (1 << i) >> i
