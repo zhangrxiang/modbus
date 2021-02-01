@@ -2,6 +2,7 @@ package relay
 
 import (
 	"encoding/binary"
+	"sync"
 )
 
 // Client is the interface that groups the Packager and Transporter methods.
@@ -9,6 +10,7 @@ type Client struct {
 	packager    Packager
 	transporter Transporter
 	length      byte
+	sync.Mutex
 }
 
 // NewClient creates a new modbus client with given backend handler.
@@ -32,6 +34,11 @@ func NewDefaultClient(handler *ClientHandler) *Client {
 
 //send 发送有返回数据
 func (c *Client) send(code byte, data []byte) ([]byte, error) {
+	c.Lock()
+	defer c.Unlock()
+	if c.packager == nil {
+		return nil, ErrPackagerNil
+	}
 	adu, err := c.packager.Encode(&ProtocolDataUnit{
 		FunctionCode: code,
 		Data:         data,
@@ -52,7 +59,7 @@ func (c *Client) send(code byte, data []byte) ([]byte, error) {
 
 //单个继电器路数处理
 func (c *Client) one(i, code, result byte) error {
-	if i <= 0 || i > c.length {
+	if i < 1 || i > c.length {
 		return ErrBranchesLength
 	}
 	data, err := c.send(code, []byte{0, 0, 0, i})
@@ -73,29 +80,29 @@ func (c *Client) one(i, code, result byte) error {
 
 //断开某路
 func (c *Client) OffOne(i byte) error {
-	return c.one(i+1, RequestOffOne, 0)
+	return c.one(i, RequestOffOne, 0)
 }
 
 //闭合某路
 func (c *Client) OnOne(i byte) error {
-	return c.one(i+1, RequestOnOne, 1)
+	return c.one(i, RequestOnOne, 1)
 }
 
 //翻转某路
 func (c *Client) FlipOne(i byte) error {
-	return c.one(i+1, RequestFlipOne, 2)
+	return c.one(i, RequestFlipOne, 2)
 }
 
 //某路继电器状态
 func (c *Client) StatusOne(i byte) (byte, error) {
-	if i <= 0 || i >= c.length {
+	if i < 1 || i > c.length {
 		return 0, ErrBranchesLength
 	}
 	status, err := c.status()
 	if err != nil {
 		return 0, err
 	}
-	return status[i], nil
+	return status[i-1], nil
 }
 
 //继电器状态
@@ -127,6 +134,9 @@ func (c *Client) status() ([]byte, error) {
 
 //sendNil 发送无返回数据
 func (c *Client) sendNil(code byte, data []byte) error {
+	if c.packager == nil {
+		return ErrPackagerNil
+	}
 	adu, err := c.packager.Encode(&ProtocolDataUnit{
 		FunctionCode: code,
 		Data:         data,

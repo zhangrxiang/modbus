@@ -54,6 +54,7 @@ func TestClient_Status(t *testing.T) {
 	fmt.Println(client.OffAll())
 	fmt.Println(client.OnOne(1))
 	fmt.Println(client.OnOne(7))
+	fmt.Println(client.OnOne(8))
 	fmt.Println(client.OnOne(10))
 	fmt.Println(client.Status())
 	fmt.Println(client.StatusOne(1))

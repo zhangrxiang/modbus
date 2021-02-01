@@ -56,6 +56,7 @@ const (
 )
 
 var (
+	ErrPackagerNil    = errors.New("packager 未实例化")
 	ErrBranchesLength = errors.New("继电器路数超出范围")
 	ErrReturnResult   = errors.New("串口返回数据格式异常")
 )
