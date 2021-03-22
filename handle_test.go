@@ -7,7 +7,9 @@ import (
 )
 
 var handle = func() *ClientHandler {
-	handle := NewHandler("COM7")
+	address := "COM7"
+	address = "/dev/ttyUSB0"
+	handle := NewHandler(address)
 	handle.SlaveId = 1
 	handle.BaudRate = 9600
 	handle.Parity = "N"

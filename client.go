@@ -36,7 +36,7 @@ func NewDefaultClient(handler *ClientHandler) *Client {
 func (c *Client) send(code byte, data []byte) ([]byte, error) {
 	c.Lock()
 	defer c.Unlock()
-	if c.packager == nil {
+	if c.packager == nil || c.transporter == nil {
 		return nil, ErrPackagerNil
 	}
 	adu, err := c.packager.Encode(&ProtocolDataUnit{
@@ -134,7 +134,7 @@ func (c *Client) status() ([]byte, error) {
 
 //sendNil 发送无返回数据
 func (c *Client) sendNil(code byte, data []byte) error {
-	if c.packager == nil {
+	if c.packager == nil || c.transporter == nil {
 		return ErrPackagerNil
 	}
 	adu, err := c.packager.Encode(&ProtocolDataUnit{

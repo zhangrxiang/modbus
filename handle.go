@@ -3,6 +3,8 @@ package relay
 import (
 	"fmt"
 	"io"
+	"log"
+	"os"
 	"time"
 )
 
@@ -19,9 +21,12 @@ type ClientHandler struct {
 	relaySerialTransporter
 }
 
+var DefaultLogger = log.New(os.Stdout, "", log.Ldate|log.Ltime)
+
 // NewDefaultHandler allocates and initializes a ClientHandler.
 func NewDefaultHandler(address string, slave byte) *ClientHandler {
 	handler := &ClientHandler{}
+	handler.Logger = DefaultLogger
 	handler.Address = address
 	handler.Timeout = serialTimeout
 	handler.IdleTimeout = serialIdleTimeout
@@ -35,11 +40,7 @@ func NewDefaultHandler(address string, slave byte) *ClientHandler {
 
 // NewHandler allocates and initializes a RELAYClientHandler.
 func NewHandler(address string) *ClientHandler {
-	handler := &ClientHandler{}
-	handler.Address = address
-	handler.Timeout = serialTimeout
-	handler.IdleTimeout = serialIdleTimeout
-	return handler
+	return NewDefaultHandler(address, 1)
 }
 
 // relayPackager implements Packager interface.
