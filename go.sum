@@ -1,2 +1,4 @@
 github.com/goburrow/serial v0.1.0 h1:v2T1SQa/dlUqQiYIT8+Cu7YolfqAi3K96UmhwYyuSrA=
 github.com/goburrow/serial v0.1.0/go.mod h1:sAiqG0nRVswsm1C97xsttiYCzSLBmUZ/VSlVLZJ8haA=
+github.com/zing-dev/go-bit-bytes v0.0.0-20210607023826-96dc6f7d5939 h1:1O/BQUd06URliANKmRxLVV9cZtG5RBvsX0SsEV7L3N8=
+github.com/zing-dev/go-bit-bytes v0.0.0-20210607023826-96dc6f7d5939/go.mod h1:VRykIeLdYquuk0LYWVKilb2iCsyuolBIZ1Clv7Eklfc=

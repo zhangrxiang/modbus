@@ -9,15 +9,16 @@ const (
 	RequestHeader         = 0x55 //发送帧数据头
 	ResponseHeader        = 0x22 //接受帧数据头
 
-	//功能码
+	// RequestReadStatus 功能码
 	RequestReadStatus = 0x10 //读取状态
 
-	RequestOffOne  = 0x11 //断开某路
+	RequestOffOne  = 0x11 //断开某路 第四个字节代表断开第几路继电器，前三个字节为 0。
 	RequestOnOne   = 0x12 //吸合某路
 	RequestFlipOne = 0x20 //翻转某路
 
 	RequestRunCMD = 0x13 //命令执行
 
+	// RequestOffGroup 数据区域共4个字节，每个字节8位，共32位。最多代表对32路的操作，1代表断开 0代表保持原来状态。最后一个字节的第0位(BIT0)代表第一路，依次类推。
 	RequestOffGroup  = 0x14 //组断开
 	RequestOnGroup   = 0x15 //组吸合
 	RequestFlipGroup = 0x16 //组翻转
@@ -53,6 +54,9 @@ const (
 	ResponseModelAddress       = 0x40 //返回模块地址
 	ResponseReadInnerVariable  = 0x70 //读内部变量
 	ResponseWriteInnerVariable = 0x71 //写内部变量
+
+	GetStatusFromRelay = 1
+	GetStatusFromCache = 0
 )
 
 var (

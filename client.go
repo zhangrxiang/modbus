@@ -2,7 +2,10 @@ package relay
 
 import (
 	"encoding/binary"
+	"github.com/zing-dev/go-bit-bytes/bin"
+	"github.com/zing-dev/go-bit-bytes/bit"
 	"sync"
+	"time"
 )
 
 // Client is the interface that groups the Packager and Transporter methods.
@@ -10,6 +13,9 @@ type Client struct {
 	packager    Packager
 	transporter Transporter
 	length      byte
+
+	from byte
+	stat []uint16
 	sync.Mutex
 }
 
@@ -21,15 +27,30 @@ func NewClient(handler *ClientHandler, length byte) *Client {
 	if length > MaxBranchesLength {
 		length = MaxBranchesLength
 	}
+	stat := make([]uint16, length)
 	return &Client{
 		packager:    handler,
 		transporter: handler,
 		length:      length,
+		stat:        stat,
 	}
 }
 
 func NewDefaultClient(handler *ClientHandler) *Client {
 	return NewClient(handler, DefaultBranchesLength)
+}
+
+func (c *Client) SetStatusFrom(from byte) {
+	if from != GetStatusFromCache && from != GetStatusFromRelay {
+		panic("err get status from")
+	}
+	c.from = from
+}
+
+func (c *Client) GetStats() []uint16 {
+	c.Lock()
+	defer c.Unlock()
+	return c.stat
 }
 
 //send 发送有返回数据
@@ -78,22 +99,22 @@ func (c *Client) one(i, code, result byte) error {
 	return ErrReturnResult
 }
 
-//断开某路
+// OffOne 断开某路
 func (c *Client) OffOne(i byte) error {
 	return c.one(i, RequestOffOne, 0)
 }
 
-//闭合某路
+// OnOne 闭合某路
 func (c *Client) OnOne(i byte) error {
 	return c.one(i, RequestOnOne, 1)
 }
 
-//翻转某路
+// FlipOne 翻转某路
 func (c *Client) FlipOne(i byte) error {
 	return c.one(i, RequestFlipOne, 2)
 }
 
-//某路继电器状态
+// StatusOne 某路继电器状态
 func (c *Client) StatusOne(i byte) (byte, error) {
 	if i < 1 || i > c.length {
 		return 0, ErrBranchesLength
@@ -105,7 +126,7 @@ func (c *Client) StatusOne(i byte) (byte, error) {
 	return status[i-1], nil
 }
 
-//继电器状态
+// Status 继电器状态
 func (c *Client) Status() ([]byte, error) {
 	status, err := c.status()
 	if err != nil {
@@ -145,6 +166,7 @@ func (c *Client) sendNil(code byte, data []byte) error {
 		return err
 	}
 	adu, err = c.transporter.Send(adu)
+	c.onNil(code, data)
 	return err
 }
 
@@ -183,7 +205,7 @@ func (c *Client) group(branches ...byte) ([]byte, error) {
 	return status, nil
 }
 
-//断开组
+// OffGroup 断开组
 func (c *Client) OffGroup(i ...byte) error {
 	group, err := c.group(i...)
 	if err != nil {
@@ -193,7 +215,7 @@ func (c *Client) OffGroup(i ...byte) error {
 	return err
 }
 
-//闭合组
+// OnGroup 闭合组
 func (c *Client) OnGroup(i ...byte) error {
 	group, err := c.group(i...)
 	if err != nil {
@@ -203,7 +225,7 @@ func (c *Client) OnGroup(i ...byte) error {
 	return err
 }
 
-//组翻转
+// FlipGroup 组翻转
 func (c *Client) FlipGroup(i ...byte) error {
 	group, err := c.group(i...)
 	if err != nil {
@@ -226,22 +248,22 @@ func (c *Client) point(code, i byte, time int) error {
 	return err
 }
 
-//点动断开某路
+// OffPoint 点动断开某路
 func (c *Client) OffPoint(i byte, t int) error {
 	return c.point(RequestOffPoint, i, t)
 }
 
-//点动闭合某路
+// OnPoint 点动闭合某路
 func (c *Client) OnPoint(i byte, t int) error {
 	return c.point(RequestOnPoint, i, t)
 }
 
-//断开所有
+// OffAll 断开所有
 func (c *Client) OffAll() error {
 	return c.sendNil(RequestRunCMDNil, []byte{0, 0, 0, 0})
 }
 
-//吸合所有
+// OnAll 吸合所有
 func (c *Client) OnAll() error {
 	return c.sendNil(RequestRunCMDNil, []byte{0xff, 0xff, 0xff, 0xff})
 }
@@ -255,22 +277,22 @@ func (c *Client) oneNil(i, code byte) error {
 	return c.sendNil(code, []byte{0, 0, 0, i})
 }
 
-//翻转某路
+// FlipOneNil 翻转某路
 func (c *Client) FlipOneNil(i byte) error {
 	return c.oneNil(i, RequestFlipOneNil)
 }
 
-//断开某路
+// OffOneNil 断开某路
 func (c *Client) OffOneNil(i byte) error {
 	return c.oneNil(i, RequestOffOneNil)
 }
 
-//吸合某路
+// OnOneNil 吸合某路
 func (c *Client) OnOneNil(i byte) error {
 	return c.oneNil(i+1, RequestOnOneNil)
 }
 
-//断开组
+// OffGroupNil 断开组
 func (c *Client) OffGroupNil(i ...byte) error {
 	group, err := c.group(i...)
 	if err != nil {
@@ -279,7 +301,7 @@ func (c *Client) OffGroupNil(i ...byte) error {
 	return c.sendNil(RequestOffGroupNil, group)
 }
 
-//吸合组
+// OnGroupNil 吸合组
 func (c *Client) OnGroupNil(i ...byte) error {
 	group, err := c.group(i...)
 	if err != nil {
@@ -288,7 +310,7 @@ func (c *Client) OnGroupNil(i ...byte) error {
 	return c.sendNil(RequestOnGroupNil, group)
 }
 
-//翻转组
+// FlipGroupNil 翻转组
 func (c *Client) FlipGroupNil(i ...byte) error {
 	group, err := c.group(i...)
 	if err != nil {
@@ -309,12 +331,70 @@ func (c *Client) pointNil(code, i byte, time int) error {
 	return c.sendNil(code, []byte{data[1], data[2], data[3], i})
 }
 
-//点动闭合
+// OnPointNil 点动闭合
 func (c *Client) OnPointNil(i byte, t int) error {
 	return c.pointNil(RequestOnPointNil, i, t)
 }
 
-//点动断开
+// OffPointNil 点动断开
 func (c *Client) OffPointNil(i byte, t int) error {
 	return c.pointNil(RequestOffPointNil, i, t)
+}
+
+//当不需要操作的返回值,继电器的状态值有自己控制
+func (c *Client) onNil(code byte, data []byte) {
+	c.Lock()
+	defer c.Unlock()
+	switch code {
+	case RequestOffOneNil:
+		c.stat[data[3]-1] = 0
+	case RequestOnPointNil:
+		time.AfterFunc(time.Millisecond*time.Duration(bit.ToUint32(append([]byte{0}, data[:3]...))-10), func() {
+			c.Lock()
+			c.stat[data[3]-1] = 0
+			defer c.Unlock()
+		})
+	case RequestOffPointNil:
+		time.AfterFunc(time.Millisecond*time.Duration(bit.ToUint32(append([]byte{0}, data[:3]...))-10), func() {
+			c.Lock()
+			c.stat[data[3]-1] = 1
+			defer c.Unlock()
+		})
+	case RequestOffGroupNil, RequestOnGroupNil:
+		d := bin.Revert(bin.FromInt(bit.ToInt(data)))
+		//数据区域共4个字节，每个字节8位，共32位。
+		//最多代表对32路的操作，1代表断开 0代表保持原来状态。最后一个字节的第0位(BIT0)代表第一路，依次类推。
+		if code == RequestOffGroupNil {
+			for i := range c.stat {
+				if c.stat[i] == 1 && d[i] == 1 {
+					c.stat[i] = 0
+				}
+			}
+		} else {
+			//数据区域共4个字节，每个字节8位，共32位。
+			//最多代表对32路的操作，1 代表吸合 0代表保持原来状态。最后一个字节的第0位(BIT0)代表第一路，依次类推。
+			for i := range c.stat {
+				if c.stat[i] == 0 && d[i] == 1 {
+					c.stat[i] = 1
+				}
+			}
+		}
+	case RequestOnOneNil:
+		c.stat[data[3]-1] = 1
+	case RequestFlipOneNil:
+		s := c.stat[data[3]-1]
+		if s == 0 {
+			c.stat[data[3]-1] = 1
+		} else {
+			c.stat[data[3]-1] = 0
+		}
+	case RequestRunCMDNil:
+		if data[0] == 0 {
+			c.stat = make([]uint16, c.length)
+		} else {
+			for i := range c.stat {
+				c.stat[i] = 1
+			}
+		}
+	}
 }
