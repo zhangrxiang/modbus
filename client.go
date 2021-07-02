@@ -388,6 +388,17 @@ func (c *Client) onNil(code byte, data []byte) {
 		} else {
 			c.stat[data[3]-1] = 0
 		}
+	case RequestFlipGroupNil:
+		d := bin.Revert(bin.FromInt(bit.ToInt(data)))
+		for i := range c.stat {
+			if d[i] == 1 {
+				if c.stat[i] == 0 {
+					c.stat[i] = 1
+				} else {
+					c.stat[i] = 0
+				}
+			}
+		}
 	case RequestRunCMDNil:
 		if data[0] == 0 {
 			c.stat = make([]uint16, c.length)
